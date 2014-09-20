@@ -1,0 +1,119 @@
+---
+title       : Developing Data Products
+subtitle    : Project Presentation
+author      : Fernando Salazar
+job         : PhD Student
+framework   : io2012      # {io2012, html5slides, shower, dzslides, ...}
+highlighter : highlight.js  # {highlight.js, prettify, highlight}
+hitheme     : tomorrow      # 
+widgets     : [mathjax, bootstrap, quiz]            # {mathjax, quiz, bootstrap}
+mode        : selfcontained     # {standalone, draft}
+knit        : slidify::knit2slides
+---
+
+## The application
+
+- Makes use of a dataset containing $7$ inputs $X1...X7$ and one output $Y$ 
+- Builds a **Random Forest (RF)** model to predict the value of the target variable $Y$ as a funcion
+of the inputs
+- Plots the true target values (points) together with the predictions (line)
+- Plots the difference between output and prediction (Error)
+- Computes the Root Mean Squared Error (RMSE) and the Maximum Absolute Error both for the
+ training and the test sets    
+
+For more details on Random Forest, see:
+- A basic and intuitive intro: http://goo.gl/syNeFT
+- An advanced and rigorous description, by its creator Leo Breiman: http://goo.gl/wQiDTc  
+
+--- .class #id 
+
+## Options and requirements
+
+The **dataset** is already pre-processed and stored with the app, which reads it and transforms it into a **data frame**.   
+
+The user can select the **amount of data for training** the RF model. The rest is devoted to check the prediction accuracy (**test set**). 
+
+The user can also set the value of the parameters which control the model training process:
+- **mtry** is the number of variables to try in each split
+- **ntree** is the number of trees in the forest
+
+The app requiers the library **randomForest** to build the model, and **ggplot2** to generate the plots. Both are **available on CRAN** 
+
+
+--- .class #id  
+
+## Sample plot (1/2)
+```{r}
+ trainRatio = 50 # Percentage of data for the training set
+ mtry = 3
+ ntree = 100
+````
+
+````{r, echo = FALSE, results='hide'}
+dataset <- read.csv("data/dummyData1.csv", row.names=1)
+      trainSize <- as.integer(trainRatio*nrow(dataset)/100)
+      datatrain <- dataset[c(1:trainSize),]
+      datatest <- dataset[(trainSize+1):nrow(dataset),]
+      library('randomForest')
+      library('ggplot2')
+      rfModel <- randomForest(x=datatrain[,2:6], y=datatrain[,1],
+                              mtry=mtry, ntree=ntree, keep.forest=T)
+      predTest <- predict(rfModel, newdata=datatest[,c(2:6)])
+      dataout <- data.frame(dataset, 'Prediction' = c(rfModel$predicted, predTest), 
+                            'Error'=c((datatrain[,1]-rfModel$predicted),(datatest[,1]-predTest)))
+      p <- ggplot(dataout, aes(x=X1, y=Y)) + geom_point(alpha=.3, size=5)
+      q <- p + geom_line(data=dataout, aes(x=X1, y = Prediction))+
+      theme_bw()+geom_vline(xintercept = dataset[as.integer(trainRatio*nrow(dataset)/100),2])
+      r <- ggplot(dataout, aes(x=X1, y=Error))+geom_point(stat='identity')+
+      theme_bw()+geom_vline(xintercept = dataset[as.integer(trainRatio*nrow(dataset)/100),2])
+```
+
+```{r, echo=FALSE, fig.width=12, fig.height=3}
+print(q)
+````
+
+```{r, echo=FALSE, fig.width=12, fig.height=1.5}
+  print(r)
+````
+
+The vertical line highlights the division between the training set (left) and the test set (right)
+
+--- .class #id
+
+## Sample plot (2/2)
+```{r}
+ trainRatio = 80 # Percentage of data for the training set
+ mtry = 2
+ ntree = 500
+````
+
+````{r, echo = FALSE}
+dataset <- read.csv("data/dummyData1.csv", row.names=1)
+      trainSize <- as.integer(trainRatio*nrow(dataset)/100)
+      datatrain <- dataset[c(1:trainSize),]
+      datatest <- dataset[(trainSize+1):nrow(dataset),]
+      library('randomForest')
+      library('ggplot2')
+      rfModel <- randomForest(x=datatrain[,2:6], y=datatrain[,1],
+                              mtry=mtry, ntree=ntree, keep.forest=T)
+      predTest <- predict(rfModel, newdata=datatest[,c(2:6)])
+      dataout <- data.frame(dataset, 'Prediction' = c(rfModel$predicted, predTest), 
+                            'Error'=c((datatrain[,1]-rfModel$predicted),(datatest[,1]-predTest)))
+      p1 <- ggplot(dataout, aes(x=X1, y=Y)) + geom_point(alpha=.3, size=5)
+      q1 <- p1 + geom_line(data=dataout, aes(x=X1, y = Prediction))+
+      theme_bw()+geom_vline(xintercept = dataset[as.integer(trainRatio*nrow(dataset)/100),2])
+      r1 <- ggplot(dataout, aes(x=X1, y=Error))+geom_point(stat='identity')+
+      theme_bw()+geom_vline(xintercept = dataset[as.integer(trainRatio*nrow(dataset)/100),2])
+
+```
+
+```{r, echo=FALSE, fig.width=12, fig.height=3}
+print(q1)
+````
+
+```{r, echo=FALSE, fig.width=12, fig.height=1.5}
+  print(r1)
+````
+
+Too many training samples lead to over-fitting. See the larger error for the test set
+
